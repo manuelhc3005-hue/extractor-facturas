@@ -8,7 +8,7 @@ import os
 # 1. Configuración de página
 st.set_page_config(page_title="Reporte Especial | Extractor", page_icon="🧾", layout="wide")
 
-# 2. Función infalible para encontrar la imagen
+# 2. Función para leer la imagen y asegurar que el código sea limpio
 @st.cache_data
 def obtener_base64_de_imagen():
     ruta_script = os.path.dirname(__file__) 
@@ -17,40 +17,35 @@ def obtener_base64_de_imagen():
     try:
         with open(ruta_imagen, "rb") as f:
             data = f.read()
-        return base64.b64encode(data).decode()
+        # El replace quita cualquier salto de línea que pueda romper el navegador
+        return base64.b64encode(data).decode().replace('\n', '')
     except Exception as e:
         return None
 
 img_base64 = obtener_base64_de_imagen()
 
-# 3. CSS Agresivo para forzar la foto sobre el Modo Oscuro
+# 3. El Hack HTML/CSS Definitivo
 if img_base64:
     st.markdown(f"""
+        <img src="data:image/jpeg;base64,{img_base64}" 
+             style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; object-fit: cover; z-index: -999;">
+        
         <style>
-            /* Forzamos el fondo en TODOS los contenedores posibles de Streamlit */
-            .stApp, [data-testid="stAppViewContainer"] {{
-                background-image: url("data:image/jpeg;base64,{img_base64}") !important;
-                background-size: cover !important;
-                background-position: center !important;
-                background-repeat: no-repeat !important;
-                background-attachment: fixed !important;
-            }}
-            
-            /* Hacemos transparente la barra superior para que no tape la foto */
-            [data-testid="stHeader"] {{
+            /* Volvemos invisibles las capas grises de Streamlit */
+            .stApp, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {{
+                background: transparent !important;
                 background-color: transparent !important;
             }}
-
-            /* Contenedor blanco semi-transparente central para que los datos sean legibles */
+            
+            /* Diseñamos la caja blanca central para que resalte sobre la foto */
             .block-container {{
-                background-color: rgba(255, 255, 255, 0.92) !important;
+                background-color: rgba(255, 255, 255, 0.95) !important; 
                 padding: 3rem !important;
                 border-radius: 20px !important;
-                box-shadow: 0 10px 30px rgba(0,0,0,0.5) !important;
+                box-shadow: 0 10px 40px rgba(0,0,0,0.6) !important;
                 margin-top: 2rem !important;
             }}
 
-            /* Título */
             .main-title {{
                 text-align: center;
                 color: #1E3A8A;
@@ -71,7 +66,6 @@ st.divider()
 col1, col_centro, col2 = st.columns([1, 2, 1])
 
 with col_centro:
-    # Se agrega el label oculto para solucionar la advertencia de la consola
     archivos_subidos = st.file_uploader(
         label="Carga tus XML", 
         type=["xml"], 
