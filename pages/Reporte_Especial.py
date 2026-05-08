@@ -11,7 +11,6 @@ st.set_page_config(page_title="Reporte Especial | Extractor", page_icon="🧾", 
 # 2. Función infalible para encontrar la imagen
 @st.cache_data
 def obtener_base64_de_imagen():
-    # Obligamos a Python a subir un nivel en las carpetas para encontrar la foto en la raíz
     ruta_script = os.path.dirname(__file__) 
     ruta_imagen = os.path.join(ruta_script, "..", "IMG_2284.jpeg")
     
@@ -22,29 +21,33 @@ def obtener_base64_de_imagen():
     except Exception as e:
         return None
 
-# Llamamos a la función
 img_base64 = obtener_base64_de_imagen()
 
-# 3. Inyección de CSS (Fondo de foto + Transparencia)
+# 3. CSS Agresivo para forzar la foto sobre el Modo Oscuro
 if img_base64:
     st.markdown(f"""
         <style>
-            /* Selector seguro para toda la app */
-            .stApp {{
-                background-image: url("data:image/jpeg;base64,{img_base64}");
-                background-size: cover;
-                background-position: center;
-                background-repeat: no-repeat;
-                background-attachment: fixed;
+            /* Forzamos el fondo en TODOS los contenedores posibles de Streamlit */
+            .stApp, [data-testid="stAppViewContainer"] {{
+                background-image: url("data:image/jpeg;base64,{img_base64}") !important;
+                background-size: cover !important;
+                background-position: center !important;
+                background-repeat: no-repeat !important;
+                background-attachment: fixed !important;
             }}
             
-            /* Ajuste de transparencia del contenedor central */
-            .main .block-container {{
-                background-color: rgba(255, 255, 255, 0.88); 
-                padding: 3rem;
-                border-radius: 20px;
-                margin-top: 3rem;
-                box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            /* Hacemos transparente la barra superior para que no tape la foto */
+            [data-testid="stHeader"] {{
+                background-color: transparent !important;
+            }}
+
+            /* Contenedor blanco semi-transparente central para que los datos sean legibles */
+            .block-container {{
+                background-color: rgba(255, 255, 255, 0.92) !important;
+                padding: 3rem !important;
+                border-radius: 20px !important;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.5) !important;
+                margin-top: 2rem !important;
             }}
 
             /* Título */
@@ -57,8 +60,7 @@ if img_base64:
         </style>
     """, unsafe_allow_html=True)
 else:
-    # Si falla, ahora sí nos avisará con un recuadro rojo en la pantalla
-    st.error("🚨 No se encontró la imagen. Python no pudo leer IMG_2284.jpeg")
+    st.error("🚨 No se encontró la imagen IMG_2284.jpeg")
 
 # 4. Encabezado de la página
 st.markdown("<h1 class='main-title'>🧾 Reporte Especial de Facturación</h1>", unsafe_allow_html=True)
@@ -69,7 +71,14 @@ st.divider()
 col1, col_centro, col2 = st.columns([1, 2, 1])
 
 with col_centro:
-    archivos_subidos = st.file_uploader("Arrastra aquí tus XML", type=["xml"], accept_multiple_files=True, key="uploader_especial")
+    # Se agrega el label oculto para solucionar la advertencia de la consola
+    archivos_subidos = st.file_uploader(
+        label="Carga tus XML", 
+        type=["xml"], 
+        accept_multiple_files=True, 
+        key="uploader_especial",
+        label_visibility="collapsed"
+    )
 
 if archivos_subidos:
     st.write("<br>", unsafe_allow_html=True)
@@ -78,7 +87,6 @@ if archivos_subidos:
     with col_btn:
         if st.button("⚙️ Procesar Facturas Especiales", use_container_width=True):
             datos_facturas = []
-            namespaces = {'cfdi': 'http://www.sat.gob.mx/cfd/4', 'tfd': 'http://www.sat.gob.mx/TimbreFiscalDigital'}
             
             for archivo in archivos_subidos:
                 try:
